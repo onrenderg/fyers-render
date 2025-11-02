@@ -1,43 +1,59 @@
-
 from datetime import datetime
-
 import pandas as pd
 import os, time, json
 from pytz import timezone
 
+def setup_logger():
+    """Initialize and configure the logger with dynamic filename"""
+    from loguru import logger
+    
+    ist = timezone('Asia/Kolkata')
+    log_filename = datetime.now(ist).strftime('%b%d').lower() + ".log"
+    # Add logger with dynamic filename
+    logger.add(
+        log_filename,
+        rotation="5 MB",
+        retention="10 days",
+        level="INFO",
+        format="{time:YYYY-MM-DD HH:mm:ss} [{level}] {message}"
+    )
+    return logger
+
+# Initialize logger
+logger = setup_logger()
+
+def setup_data_dir():
+    """Setup and verify data directory"""
+    import os
+    
+    data_dir = '/var/lib/data/'
+    # Path for saving and reading csvs
+    if not os.path.exists(data_dir):
+        print(f"Data dir {data_dir} dont exist")
+    else:
+        print(f"Data dir {data_dir} does exist")
+    return data_dir
+
+# Setup data directory
+data_dir = setup_data_dir()
 
 
-from loguru import logger 
-ist = timezone('Asia/Kolkata')
-log_filename = datetime.now(ist).strftime('%b%d').lower() + ".log"
-# Add logger with dynamic filename
-logger.add(
-    log_filename,
-    rotation="5 MB",
-    retention="10 days",
-    level="INFO",
-    format="{time:YYYY-MM-DD HH:mm:ss} [{level}] {message}"
-)
-logger.info(f"Initial tick_deque: {list(tick_deque)}")
 
-import os 
-data_dir = '/var/lib/data/'
-# Path for saving and reading csvs
-if not os.path.exists(data_dir):
-    print(f"Data dir {data_dir} dont exist")
-else:
-    print(f"Data dir {data_dir} does exist")
-
-
-
-from collections import deque
-## Ticks imdb
-TICK_DEQUE_MAXLEN = 50
-tick_deque = deque(maxlen=TICK_DEQUE_MAXLEN)
-
-## Candles imdb for rendering purpose 
-CANDLES_DEQUE_MAXLEN = 20000 # 1day 5sec = 4500 now 2 days with today day data 
-base_candle_deque = deque(maxlen=CANDLES_DEQUE_MAXLEN)
+def setup_deques():
+    """Initialize deques for ticks and candles in-memory database"""
+    from collections import deque
+    
+    ## Ticks imdb
+    TICK_DEQUE_MAXLEN = 50
+    tick_deque = deque(maxlen=TICK_DEQUE_MAXLEN)
+    
+    ## Candles imdb for rendering purpose 
+    CANDLES_DEQUE_MAXLEN = 20000  # 1day 5sec = 4500 now 2 days with today day data 
+    base_candle_deque = deque(maxlen=CANDLES_DEQUE_MAXLEN)
+    
+    return tick_deque, base_candle_deque
+# Initialize deques
+tick_deque, base_candle_deque = setup_deques()
 
 
 #  save ws (the current WebSocket connection) in a global/shared variable when the client first connects.
@@ -51,21 +67,24 @@ active_ws = None
 
 ###########################
 
-#@1 api cred load 
-import credentials as cr
-
-APP_ID       = cr.APP_ID
-APP_TYPE     = cr.APP_TYPE
-SECRET_KEY   = cr.SECRET_KEY
-FY_ID        = cr.FY_ID
-APP_ID_TYPE  = cr.APP_ID_TYPE
-TOTP_KEY     = cr.TOTP_KEY
-PIN          = cr.PIN
-REDIRECT_URI = cr.REDIRECT_URI
-
-client_id = f'{APP_ID}-{APP_TYPE}'
-
-
+def load_api_credentials():
+    """Load API credentials from credentials module"""
+    import credentials as cr
+    
+    APP_ID       = cr.APP_ID
+    APP_TYPE     = cr.APP_TYPE
+    SECRET_KEY   = cr.SECRET_KEY
+    FY_ID        = cr.FY_ID
+    APP_ID_TYPE  = cr.APP_ID_TYPE
+    TOTP_KEY     = cr.TOTP_KEY
+    PIN          = cr.PIN
+    REDIRECT_URI = cr.REDIRECT_URI
+    
+    client_id = f'{APP_ID}-{APP_TYPE}'
+    
+    return APP_ID, APP_TYPE, SECRET_KEY, FY_ID, APP_ID_TYPE, TOTP_KEY, PIN, REDIRECT_URI, client_id
+# Load API credentials
+APP_ID, APP_TYPE, SECRET_KEY, FY_ID, APP_ID_TYPE, TOTP_KEY, PIN, REDIRECT_URI, client_id = load_api_credentials()
 # @2 use api cred in auth_token_g fn 
 from fyers_apiv3 import fyersModel
 def gen_auth_token():
