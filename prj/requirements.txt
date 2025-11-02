@@ -1,0 +1,17 @@
+
+
+Flask
+flask-sock
+pandas
+pytz
+APScheduler
+loguru
+fyers-apiv3
+requests
+pyotp
+
+
+# pip install --only-binary :all: aiohttp
+# pip install aws-lambda-powertools
+# pip install --no-deps fyers-apiv3
+# where pip3 / pip & python 

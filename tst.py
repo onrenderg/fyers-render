@@ -22,9 +22,22 @@ def tick_data_stream(interval_seconds, num_ticks=10, start_price=100.0):
 ticks = None
 def received_data():
     global ticks 
-    ticks = tick_data_stream(1, num_ticks=2)
+    ticks = tick_data_stream(1, num_ticks=1)
+
+    import dateutil.parser
+    import datetime
+    from datetime import timedelta, date, datetime
+    time_datetime = dateutil.parser.parse(ticks[0]['time'])
+    timenow = time_datetime  + timedelta()
+    timenow_dt = timenow.strftime("%m/%d/%Y %H:%M:%S")
+    print(ticks, timenow_dt)
+
+for i in range(30):
+    received_data()
 
 
-received_data()
-print(ticks)
+
+# Candle create 
+# https://www.youtube.com/watch?v=o_RFdbAQJ3w&t=37s
+# print(ticks)
 
