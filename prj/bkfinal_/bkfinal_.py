@@ -475,7 +475,12 @@ def ws_endpoint(ws):
         while True:
             ws.receive()  # This call blocks until a message is received (or connection is closed)
     except Exception as e:
-        logger.error(f"WebSocket error: {e}")
+        # Check if it's a normal close (1000-1001 are expected during page refresh/navigation)
+        error_str = str(e)
+        if "1000" in error_str or "1001" in error_str:
+            logger.info(f"WebSocket closed normally: {e}")
+        else:
+            logger.error(f"WebSocket error: {e}")
     finally:
         if active_ws == ws:
             active_ws = None
