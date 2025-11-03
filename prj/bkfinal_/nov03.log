@@ -24,3 +24,200 @@
 2025-11-03 14:47:42 [ERROR] WebSocket error: Connection closed: 1001 
 2025-11-03 14:48:20 [ERROR] WebSocket error: Connection closed: 1001 
 2025-11-03 14:48:58 [INFO] Processed 200 ticks
+2025-11-03 14:54:48 [INFO] Waiting 13.5s for fresh TOTP window
+2025-11-03 14:55:02 [INFO] Auth URL: https://api-t1.fyers.in/api/v3/generate-authcode?client_id=1BE74FZNXA-100&redirect_uri=http%3A%2F%2F127.0.0.1%3A8081&response_type=code&state=None
+2025-11-03 14:55:03 [WARNING] OTP send failed (attempt 1): <body style="
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    margin: 0; 
+    font-family: Arial, sans-serif; 
+    background-color: #f4f4f4;
+    padding: 10px;
+    box-sizing: border-box;
+    text-align: center;">
+
+    <div style="
+        width: 90%;
+        max-width: 600px; /* Prevents content from stretching too wide on larger screens */
+        background: white; 
+        padding: 5%; 
+        border-radius: 10px; 
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        text-align: center;">
+
+        <h1 style="font-size: 1.5em; color: #333; margin-bottom: 15px;">Anomaly Detection</h1>
+
+        <p style="font-size: 1em; line-height: 1.2;">
+            Hi There <br>
+            <span style="font-size: 3em;">&#x1F614;</span> 
+            <br><br>
+
+            It looks like you are using some service that attempts to mask the origin IP / country / network from which you are connecting to our systems.<br><br>
+            This CF-1 is perceived as a security risk by our systems and your request to access is denied.
+            Please disable any VPN or similar services / applications that you may be running and try again.
+            <br><br>
+
+            If the issue still persists, please contact Fyers Customer Support with this response including with the IP as highlighted below.<br><br>
+            Thank You
+        </p>
+
+        <!-- IP Address Section -->
+        <div class="ip" style="margin-top: 20px; padding: 10px; border-top: 1px solid #ddd;">
+            <p style="font-size: 1em;"><strong>Your IP:</strong></p>
+            <div id="ip-address" style="font-size: 1.5em; font-weight: bold; color: #333;"></div>
+        </div>
+
+    </div>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+    <script>
+    $(document).ready(function() {
+        $.getJSON('https://jsonip.com?callback=?', function (data) {
+            $('#ip-address').text(data.ip);
+        }); 
+    });
+    </script>
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'998ad27c6d3ff5b1',t:'MTc2MjE2MTkwNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+2025-11-03 14:55:05 [WARNING] OTP send failed (attempt 2): <body style="
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    margin: 0; 
+    font-family: Arial, sans-serif; 
+    background-color: #f4f4f4;
+    padding: 10px;
+    box-sizing: border-box;
+    text-align: center;">
+
+    <div style="
+        width: 90%;
+        max-width: 600px; /* Prevents content from stretching too wide on larger screens */
+        background: white; 
+        padding: 5%; 
+        border-radius: 10px; 
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        text-align: center;">
+
+        <h1 style="font-size: 1.5em; color: #333; margin-bottom: 15px;">Anomaly Detection</h1>
+
+        <p style="font-size: 1em; line-height: 1.2;">
+            Hi There <br>
+            <span style="font-size: 3em;">&#x1F614;</span> 
+            <br><br>
+
+            It looks like you are using some service that attempts to mask the origin IP / country / network from which you are connecting to our systems.<br><br>
+            This CF-1 is perceived as a security risk by our systems and your request to access is denied.
+            Please disable any VPN or similar services / applications that you may be running and try again.
+            <br><br>
+
+            If the issue still persists, please contact Fyers Customer Support with this response including with the IP as highlighted below.<br><br>
+            Thank You
+        </p>
+
+        <!-- IP Address Section -->
+        <div class="ip" style="margin-top: 20px; padding: 10px; border-top: 1px solid #ddd;">
+            <p style="font-size: 1em;"><strong>Your IP:</strong></p>
+            <div id="ip-address" style="font-size: 1.5em; font-weight: bold; color: #333;"></div>
+        </div>
+
+    </div>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+    <script>
+    $(document).ready(function() {
+        $.getJSON('https://jsonip.com?callback=?', function (data) {
+            $('#ip-address').text(data.ip);
+        }); 
+    });
+    </script>
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'998ad28b1cf40e00',t:'MTc2MjE2MTkwNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+2025-11-03 14:55:07 [WARNING] OTP send failed (attempt 3): <body style="
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 100vh; 
+    margin: 0; 
+    font-family: Arial, sans-serif; 
+    background-color: #f4f4f4;
+    padding: 10px;
+    box-sizing: border-box;
+    text-align: center;">
+
+    <div style="
+        width: 90%;
+        max-width: 600px; /* Prevents content from stretching too wide on larger screens */
+        background: white; 
+        padding: 5%; 
+        border-radius: 10px; 
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        text-align: center;">
+
+        <h1 style="font-size: 1.5em; color: #333; margin-bottom: 15px;">Anomaly Detection</h1>
+
+        <p style="font-size: 1em; line-height: 1.2;">
+            Hi There <br>
+            <span style="font-size: 3em;">&#x1F614;</span> 
+            <br><br>
+
+            It looks like you are using some service that attempts to mask the origin IP / country / network from which you are connecting to our systems.<br><br>
+            This CF-1 is perceived as a security risk by our systems and your request to access is denied.
+            Please disable any VPN or similar services / applications that you may be running and try again.
+            <br><br>
+
+            If the issue still persists, please contact Fyers Customer Support with this response including with the IP as highlighted below.<br><br>
+            Thank You
+        </p>
+
+        <!-- IP Address Section -->
+        <div class="ip" style="margin-top: 20px; padding: 10px; border-top: 1px solid #ddd;">
+            <p style="font-size: 1em;"><strong>Your IP:</strong></p>
+            <div id="ip-address" style="font-size: 1.5em; font-weight: bold; color: #333;"></div>
+        </div>
+
+    </div>
+
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js'></script>
+    <script>
+    $(document).ready(function() {
+        $.getJSON('https://jsonip.com?callback=?', function (data) {
+            $('#ip-address').text(data.ip);
+        }); 
+    });
+    </script>
+
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'998ad299fb43f5b1',t:'MTc2MjE2MTkwOC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+2025-11-03 14:55:08 [ERROR] Authentication attempt 1 failed: OTP send failed: Failed after 3 attempts
+2025-11-03 14:55:13 [INFO] Waiting 18.0s for fresh TOTP window
+2025-11-03 14:55:31 [INFO] Waiting 30.2s for fresh TOTP window
+2025-11-03 14:56:02 [INFO] Auth URL: https://api-t1.fyers.in/api/v3/generate-authcode?client_id=1BE74FZNXA-100&redirect_uri=http%3A%2F%2F127.0.0.1%3A8081&response_type=code&state=None
+2025-11-03 14:56:02 [INFO] Verifying TOTP with request_key: eyJhbGciOiJIUzI...
+2025-11-03 14:56:05 [INFO] Authentication successful
+2025-11-03 14:56:06 [INFO] Historical candles appended. Total count: 375
+2025-11-03 14:56:06 [INFO] Loaded 41399 ticks from /var/lib/data/apr03.csv
+2025-11-03 14:56:07 [INFO] Processed 0 ticks
+2025-11-03 14:56:22 [INFO] WebSocket closed normally: Connection closed: 1001 
+2025-11-03 14:56:26 [INFO] WebSocket closed normally: Connection closed: 1001 
+2025-11-03 14:57:47 [INFO] Processed 100 ticks
+2025-11-03 14:58:29 [INFO] WebSocket closed normally: Connection closed: 1001 
+2025-11-03 14:59:20 [INFO] WebSocket closed normally: Connection closed: 1001 
+2025-11-03 14:59:28 [INFO] Processed 200 ticks
+2025-11-03 14:59:52 [INFO] WebSocket closed normally: Connection closed: 1001 
+2025-11-03 15:01:08 [INFO] Processed 300 ticks
+2025-11-03 15:01:34 [INFO] WebSocket closed normally: Connection closed: 1001 
+2025-11-03 15:02:07 [INFO] WebSocket closed normally: Connection closed: 1001 
+2025-11-03 15:02:14 [INFO] WebSocket closed normally: Connection closed: 1001 
+2025-11-03 15:05:34 [INFO] Waiting 27.3s for fresh TOTP window
+2025-11-03 15:06:02 [INFO] Auth URL: https://api-t1.fyers.in/api/v3/generate-authcode?client_id=1BE74FZNXA-100&redirect_uri=http%3A%2F%2F127.0.0.1%3A8081&response_type=code&state=None
+2025-11-03 15:06:02 [INFO] Verifying TOTP with request_key: eyJhbGciOiJIUzI...
+2025-11-03 15:06:06 [INFO] Authentication successful
+2025-11-03 15:06:07 [INFO] Historical candles appended. Total count: 375
+2025-11-03 15:06:07 [INFO] Loaded 41399 ticks from /var/lib/data/apr03.csv
+2025-11-03 15:06:08 [INFO] Processed 0 ticks
+2025-11-03 15:06:15 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 15:06:22 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 15:06:26 [ERROR] WebSocket error: Connection closed: 1001 
