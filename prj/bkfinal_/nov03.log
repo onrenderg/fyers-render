@@ -1,0 +1,26 @@
+2025-11-03 14:39:47 [INFO] Waiting 14.7s for fresh TOTP window
+2025-11-03 14:39:54 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 14:40:02 [INFO] Auth URL: https://api-t1.fyers.in/api/v3/generate-authcode?client_id=1BE74FZNXA-100&redirect_uri=http%3A%2F%2F127.0.0.1%3A8081&response_type=code&state=None
+2025-11-03 14:40:02 [INFO] Verifying TOTP with request_key: eyJhbGciOiJIUzI...
+2025-11-03 14:40:05 [INFO] Authentication successful
+2025-11-03 14:40:36 [INFO] Waiting 25.9s for fresh TOTP window
+2025-11-03 14:41:02 [INFO] Auth URL: https://api-t1.fyers.in/api/v3/generate-authcode?client_id=1BE74FZNXA-100&redirect_uri=http%3A%2F%2F127.0.0.1%3A8081&response_type=code&state=None
+2025-11-03 14:41:02 [INFO] Verifying TOTP with request_key: eyJhbGciOiJIUzI...
+2025-11-03 14:41:05 [INFO] Authentication successful
+2025-11-03 14:41:06 [INFO] Historical candles appended. Total count: 375
+2025-11-03 14:41:06 [ERROR] CSV file not found: /var/lib/data/apr03.csv
+2025-11-03 14:41:53 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 14:42:01 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 14:45:16 [INFO] Waiting 16.0s for fresh TOTP window
+2025-11-03 14:45:32 [INFO] Auth URL: https://api-t1.fyers.in/api/v3/generate-authcode?client_id=1BE74FZNXA-100&redirect_uri=http%3A%2F%2F127.0.0.1%3A8081&response_type=code&state=None
+2025-11-03 14:45:32 [INFO] Verifying TOTP with request_key: eyJhbGciOiJIUzI...
+2025-11-03 14:45:35 [INFO] Authentication successful
+2025-11-03 14:45:36 [INFO] Historical candles appended. Total count: 375
+2025-11-03 14:45:36 [INFO] Loaded 41399 ticks from /var/lib/data/apr03.csv
+2025-11-03 14:45:37 [INFO] Processed 0 ticks
+2025-11-03 14:45:38 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 14:46:18 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 14:47:18 [INFO] Processed 100 ticks
+2025-11-03 14:47:42 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 14:48:20 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 14:48:58 [INFO] Processed 200 ticks

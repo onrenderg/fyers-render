@@ -1,12 +1,10 @@
-from datetime import datetime
-import pandas as pd
-import os, time, json
-from pytz import timezone
+
 
 def setup_logger():
     """Initialize and configure the logger with dynamic filename"""
     from loguru import logger
-    
+    from datetime import datetime
+    from pytz import timezone 
     ist = timezone('Asia/Kolkata')
     log_filename = datetime.now(ist).strftime('%b%d').lower() + ".log"
     # Add logger with dynamic filename
@@ -84,7 +82,6 @@ def load_api_credentials():
 # Load API credentials
 APP_ID, APP_TYPE, SECRET_KEY, FY_ID, APP_ID_TYPE, TOTP_KEY, PIN, REDIRECT_URI, client_id = load_api_credentials()
 # @2 use api cred in auth_token_g fn 
-from fyers_apiv3 import fyersModel
 def gen_auth_token():
     # Need credentials.py in  same folder 
     import requests, time, base64, struct, hmac
@@ -92,7 +89,7 @@ def gen_auth_token():
     from urllib.parse import urlparse, parse_qs 
     import pyotp
     from urllib import parse
-    import sys
+    import sys, json, time
 
     # Get access token using the new authentication logic
 
@@ -283,6 +280,9 @@ def get_hist(clientId,accessToken):
     """
     Fetches historical candle data from Fyers API and populates the candles_data deque.
     """
+    from datetime import datetime
+    import pandas as pd
+    from fyers_apiv3 import fyersModel
     global base_candle_deque
     fyers = fyersModel.FyersModel(client_id=clientId, is_async=False, token=accessToken, log_path="./")
     
@@ -331,6 +331,8 @@ the 5sec candles deque base_candle_deque and also send
 the updated candles latest to  active sub ws 
 """
 def update_base_candle_deque(incoming_tick):
+    import pandas as pd
+    import json
     global base_candle_deque, active_ws
 
     # incoming_tick["exch_feed_time"] is IST‑based epoch
@@ -375,6 +377,11 @@ def replay_feed(interval=1.0, date=None):
         interval: Time between ticks in seconds (default: 1.0)
         date: Date to replay in format 'mmdd' (e.g., 'apr3'). If None, uses current date.
     """
+    
+    from pytz import timezone
+    from datetime import datetime
+    import pandas as pd
+    import os, time 
     global candles_data
     
     # Determine which date to use
@@ -480,6 +487,7 @@ def index():
 
 @app.route("/historic")
 def historic():
+    import json
     """Return historical candle data as JSON."""
     return json.dumps(list(base_candle_deque))
 
@@ -491,6 +499,7 @@ import threading
 feed_thread = threading.Thread(target=realtime_feed_main, daemon=True)
 feed_thread.start()
 
-port = int(os.getenv('PORT', 80))
+import os 
+port = int(os.getenv('PORT', 8080))
 print('Listening on port %s' % (port))
 app.run(debug=False, host="0.0.0.0", port=port)
