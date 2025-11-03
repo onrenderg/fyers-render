@@ -1,92 +1,148 @@
+from flask import Flask, render_template_string, send_from_directory
+from flask_sock import Sock
 from datetime import datetime
+from collections import deque
 import pandas as pd
-import os, time, json
+import os, time, threading, json
 from pytz import timezone
+from apscheduler.schedulers.background import BackgroundScheduler
+from loguru import logger  # Import loguru's logger
+from fyers_apiv3 import fyersModel
 
-def setup_logger():
-    """Initialize and configure the logger with dynamic filename"""
-    from loguru import logger
-    
-    ist = timezone('Asia/Kolkata')
-    log_filename = datetime.now(ist).strftime('%b%d').lower() + ".log"
-    # Add logger with dynamic filename
-    logger.add(
-        log_filename,
-        rotation="5 MB",
-        retention="10 days",
-        level="INFO",
-        format="{time:YYYY-MM-DD HH:mm:ss} [{level}] {message}"
-    )
-    return logger
+import credentials as cr
 
-# Initialize logger
-logger = setup_logger()
+APP_ID       = cr.APP_ID
+APP_TYPE     = cr.APP_TYPE
+SECRET_KEY   = cr.SECRET_KEY
+FY_ID        = cr.FY_ID
+APP_ID_TYPE  = cr.APP_ID_TYPE
+TOTP_KEY     = cr.TOTP_KEY
+PIN          = cr.PIN
+REDIRECT_URI = cr.REDIRECT_URI
 
-def setup_data_dir():
-    """Setup and verify data directory"""
-    import os
-    
-    data_dir = '/var/lib/data/'
-    # Path for saving and reading csvs
-    if not os.path.exists(data_dir):
-        print(f"Data dir {data_dir} dont exist")
-    else:
-        print(f"Data dir {data_dir} does exist")
-    return data_dir
+client_id = f'{APP_ID}-{APP_TYPE}'
 
-# Setup data directory
-data_dir = setup_data_dir()
+# Declare vars for
+## flask wserverappl  and sockserverappl 
+app = Flask(__name__)
+sock = Sock(app)
 
 
+## Ticks imdb
+TICK_DEQUE_MAXLEN = 50
+tick_deque = deque(maxlen=TICK_DEQUE_MAXLEN)
 
-def setup_deques():
-    """Initialize deques for ticks and candles in-memory database"""
-    from collections import deque
-    
-    ## Ticks imdb
-    TICK_DEQUE_MAXLEN = 50
-    tick_deque = deque(maxlen=TICK_DEQUE_MAXLEN)
-    
-    ## Candles imdb for rendering purpose 
-    CANDLES_DEQUE_MAXLEN = 20000  # 1day 5sec = 4500 now 2 days with today day data 
-    base_candle_deque = deque(maxlen=CANDLES_DEQUE_MAXLEN)
-    
-    return tick_deque, base_candle_deque
-# Initialize deques
-tick_deque, base_candle_deque = setup_deques()
+## Candles imdb for rendering purpose 
+CANDLES_DEQUE_MAXLEN = 20000 # 1day 5sec = 4500 now 2 days with today day data 
+base_candle_deque = deque(maxlen=CANDLES_DEQUE_MAXLEN)
 
+
+## var for sending udpate and thread  handling 
+ws_client = None
+ws_thread = None
 
 #  save ws (the current WebSocket connection) in a global/shared variable when the client first connects.
 active_ws = None
-## var for sending udpate and thread  handling 
-# ws_client = None
-# ws_thread = None
 
 
 
+###################################################### Loguru Configuration ###############################################
+# Remove previous logger.basicConfig usage.
+# Configure loguru to log messages to both console and file with rotation.
+# logger.remove()  # Remove any default configuration
 
-###########################
 
-def load_api_credentials():
-    """Load API credentials from credentials module"""
-    import credentials as cr
-    
-    APP_ID       = cr.APP_ID
-    APP_TYPE     = cr.APP_TYPE
-    SECRET_KEY   = cr.SECRET_KEY
-    FY_ID        = cr.FY_ID
-    APP_ID_TYPE  = cr.APP_ID_TYPE
-    TOTP_KEY     = cr.TOTP_KEY
-    PIN          = cr.PIN
-    REDIRECT_URI = cr.REDIRECT_URI
-    
-    client_id = f'{APP_ID}-{APP_TYPE}'
-    
-    return APP_ID, APP_TYPE, SECRET_KEY, FY_ID, APP_ID_TYPE, TOTP_KEY, PIN, REDIRECT_URI, client_id
-# Load API credentials
-APP_ID, APP_TYPE, SECRET_KEY, FY_ID, APP_ID_TYPE, TOTP_KEY, PIN, REDIRECT_URI, client_id = load_api_credentials()
-# @2 use api cred in auth_token_g fn 
-from fyers_apiv3 import fyersModel
+
+ist = timezone('Asia/Kolkata')
+log_filename = datetime.now(ist).strftime('%b%d').lower() + ".log"
+# Add logger with dynamic filename
+logger.add(
+    log_filename,
+    rotation="5 MB",
+    retention="10 days",
+    level="INFO",
+    format="{time:YYYY-MM-DD HH:mm:ss} [{level}] {message}"
+)
+
+logger.info(f"Initial tick_deque: {list(tick_deque)}")
+
+######################################################
+
+# Path for saving and reading csvs
+import os 
+data_dir = '/var/lib/data/'
+
+
+if not os.path.exists(data_dir):
+    print(f"Data dir {data_dir} dont exist")
+else:
+    print(f"Data dir {data_dir} does exist")
+
+""" Take incoming tick replay or (ws_client ticks then also  save to tick_deque)   and update 
+the 5sec candles deque base_candle_deque and also send 
+the updated candles latest to  active sub ws 
+"""
+
+
+@sock.route("/ws")
+def ws_endpoint(ws):
+    """
+    Sets this connection as the active WebSocket and keeps it open.
+    The active connection will receive candle updates directly from update_candle_with_tick.
+    """
+    global active_ws
+    active_ws = ws
+    try:
+        # Keep the connection open
+        while True:
+            ws.receive()  # This call blocks until a message is received (or connection is closed)
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+    finally:
+        if active_ws == ws:
+            active_ws = None
+
+# Helper functions
+
+
+## Util1
+
+
+def update_base_candle_deque(incoming_tick):
+    global base_candle_deque, active_ws
+
+    # incoming_tick["exch_feed_time"] is IST‑based epoch
+    utc_ts = int(incoming_tick["exch_feed_time"]) - 19800
+    # bucket it on 5s
+    bucket_time = utc_ts - (utc_ts % 5)
+
+    price = incoming_tick["ltp"]
+    if base_candle_deque and base_candle_deque[-1]['time'] == bucket_time:
+        last = base_candle_deque[-1]
+        last['high']  = max(last['high'], price)
+        last['low']   = min(last['low'],  price)
+        last['close'] = price
+        updated = last
+    else:
+        new_candle = {
+            'time':  bucket_time,
+            'open':  price,
+            'high':  price,
+            'low':   price,
+            'close': price
+        }
+        base_candle_deque.append(new_candle)
+        updated = new_candle
+
+    if active_ws:
+        try:
+            active_ws.send(json.dumps({'candle': updated}, default=str))
+        except Exception as e:
+            logger.error(f"Error sending to WebSocket: {e}")
+            active_ws = None
+
+
+## Util2 
 def gen_auth_token():
     # Need credentials.py in  same folder 
     import requests, time, base64, struct, hmac
@@ -280,7 +336,9 @@ def gen_auth_token():
 
     return access_token
 
-# @4. 
+
+
+
 def get_hist(clientId,accessToken):
     """
     Fetches historical candle data from Fyers API and populates the candles_data deque.
@@ -327,46 +385,91 @@ def get_hist(clientId,accessToken):
         logger.error("Failed to fetch historical data.")
 
 
-# @3 ## Util1
-""" Take incoming tick replay or (ws_client ticks then also  save to tick_deque)   and update 
-the 5sec candles deque base_candle_deque and also send 
-the updated candles latest to  active sub ws 
-"""
-def update_base_candle_deque(incoming_tick):
-    global base_candle_deque, active_ws
-
-    # incoming_tick["exch_feed_time"] is IST‑based epoch
-    utc_ts = int(incoming_tick["exch_feed_time"]) - 19800
-    # bucket it on 5s
-    bucket_time = utc_ts - (utc_ts % 5)
-
-    price = incoming_tick["ltp"]
-    if base_candle_deque and base_candle_deque[-1]['time'] == bucket_time:
-        last = base_candle_deque[-1]
-        last['high']  = max(last['high'], price)
-        last['low']   = min(last['low'],  price)
-        last['close'] = price
-        updated = last
-    else:
-        new_candle = {
-            'time':  bucket_time,
-            'open':  price,
-            'high':  price,
-            'low':   price,
-            'close': price
-        }
-        base_candle_deque.append(new_candle)
-        updated = new_candle
-
-    if active_ws:
-        try:
-            active_ws.send(json.dumps({'candle': updated}, default=str))
-        except Exception as e:
-            logger.error(f"Error sending to WebSocket: {e}")
-            active_ws = None
 
 
-# @3 
+# def ws_client_connect(accessToken):
+
+#     # Rest of WebSocket setup remains unchanged
+
+#     # Now use the access token to connect to Fyers WebSocket
+#     from fyers_apiv3.FyersWebsocket import data_ws
+
+#     def onmessage(message):
+#         """
+#         Callback function for handling incoming messages from Fyers WebSocket.
+#         """
+#         logger.info(f"Raw message received: {message}")
+        
+#         if isinstance(message, str):
+#             try:
+#                 tick = json.loads(message)
+#                 logger.info(f"Parsed JSON message: {tick}")
+#             except json.JSONDecodeError as e:
+#                 logger.error(f"Failed to parse JSON message: {e}")
+#                 return
+#         else:
+#             tick = message
+
+#         # Check if this is a market data message (has 'ltp' and 'exch_feed_time')
+#         if "ltp" in tick and "exch_feed_time" in tick:
+#             price = tick["ltp"]
+#             tick_time = datetime.utcfromtimestamp(tick["exch_feed_time"]).replace(microsecond=0)
+            
+#             #  Mongo
+#             tick_deque.append({'timestamp': tick_time, 'price': price})
+#             update_base_candle_deque(tick)
+
+#             logger.info(f"Added tick data: price={price}, time={tick_time}")
+#             logger.info(f"Current deque size: {len(tick_deque)}")
+            
+#             if len(tick_deque) == tick_deque.maxlen:
+#                 logger.info("Deque reached maximum capacity. Flushing to CSV...")
+#                 ist = timezone('Asia/Kolkata')
+#                 current_date = datetime.now(ist).strftime('%b%d').lower()
+#                 csv_filename = f'{current_date}.csv'
+#                 df = pd.DataFrame(list(tick_deque))
+#                 df.to_csv(os.path.join(data_dir, csv_filename), mode='a', header=False, index=False)
+#                 tick_deque.clear()
+#                 logger.info("CSV file updated and deque cleared")
+#         elif "type" in tick and tick["type"] in ["cn", "ful", "sub"]:
+#             # These are connection/subscription messages, not market data
+#             logger.info(f"Received system message: {tick['type']} - {tick.get('message', '')}")
+#         else:
+#             logger.warning(f"Unexpected message format: {tick}")
+            
+#     def onerror(message):
+#         print("Error:", message)
+
+#     def onclose(message):
+#         print("Connection closed:", message)
+
+#     def onopen():
+#         # Subscribe to data using the FyersDataSocket instance.
+#         # Here, we use the same instance (ws_client) to subscribe.
+#         data_type = "SymbolUpdate"
+#         symbols = ['NSE:NIFTY50-INDEX']
+#         ws_client.subscribe(symbols=symbols, data_type=data_type)
+#         ws_client.keep_running()
+
+#     global ws_client
+#     ws_client = data_ws.FyersDataSocket(
+#         access_token=accessToken,  # Use the access token obtained from the new authentication logic
+#         log_path="",
+#         litemode=False,
+#         write_to_file=False,
+#         reconnect=True,
+#         on_connect=onopen,
+#         on_close=onclose,
+#         on_error=onerror,
+#         on_message=onmessage
+#     )
+
+#     # Establish the connection (this call blocks until the connection is closed)
+#     ws_client.connect()
+
+##########################
+
+
 def replay_feed(interval=1.0, date=None):
     """
     Replays tick data from a CSV file at the specified interval.
@@ -431,7 +534,7 @@ def replay_feed(interval=1.0, date=None):
 
 
 
-# @Main 
+
 # bk_replay_loop
 def realtime_feed_main():
     # 1. 
@@ -449,32 +552,16 @@ def realtime_feed_main():
 
 
 
-#   @Rendering 
-from flask import Flask, render_template_string, send_from_directory
-from flask_sock import Sock
-# Declare vars for
-## flask wserverappl  and sockserverappl 
-app = Flask(__name__)
-sock = Sock(app)
 
-@sock.route("/ws")
-def ws_endpoint(ws):
-    """
-    Sets this connection as the active WebSocket and keeps it open.
-    The active connection will receive candle updates directly from update_candle_with_tick.
-    """
-    global active_ws
-    active_ws = ws
-    try:
-        # Keep the connection open
-        while True:
-            ws.receive()  # This call blocks until a message is received (or connection is closed)
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-    finally:
-        if active_ws == ws:
-            active_ws = None
-# @ui
+
+
+######################################################
+###################################################### Flask WebSocket Server #######################################################
+
+
+
+
+
 LW_CHART = """
 <script>
    const chart = LightweightCharts.createChart(document.getElementById('chart'), {
@@ -909,8 +996,63 @@ def index():
     return render_template_string(html)
 
 
-realtime_feed_main()
+###################################################### Main Flow #######################################################
+def main():
+    """Starts the WebSocket client thread."""
+    # create_table_if_not_exists()
+    # Start ws_client_connect in a separate thread.
+    global ws_thread
+    # logger.info(" ws_thread Thread Started .")
+    print(" ws_thread Thread Started .")
 
+    ws_thread = threading.Thread(target=realtime_feed_main, daemon=True)
+    ws_thread.start()
+    logger.info("Fyers WebSocket thread started.")
+
+def stop_main():
+    """Stops the WebSocket client connection gracefully."""
+    global ws_client
+    logger.info("Stopping Fyers WebSocket connection gracefully...")
+    if ws_client:
+        try:
+            ws_client.close_connection()
+            logger.info("WebSocket connection closed.")
+        except Exception as e:
+            logger.error("Error closing WebSocket connection: %s", e)
+
+
+main()
+
+###################################################### Scheduler Setup #######################################################
+# from apscheduler.schedulers.background import BackgroundScheduler
+# scheduler = BackgroundScheduler(daemon=True)
+
+# # Schedule main() to start the WebSocket client (adjust the time as needed)
+# scheduler.add_job(
+#     main,
+#     'cron',
+#     day_of_week='mon-fri',
+#     hour=9,
+#     minute=14,
+#     timezone='Asia/Kolkata'
+# )
+
+# # Schedule stop_main() to close the connection at a specified time
+# scheduler.add_job(
+#     stop_main,
+#     'cron',
+#     day_of_week='mon-fri',
+#     hour=15,
+#     minute=31,
+#     timezone='Asia/Kolkata',
+#     id='stop_main'
+# )
+
+# scheduler.start()
+
+###################################################### Start Flask App #######################################################
 port = int(os.getenv('PORT', 80))
 print('Listening on port %s' % (port))
 app.run(debug=False, host="0.0.0.0", port=port)
+
+
