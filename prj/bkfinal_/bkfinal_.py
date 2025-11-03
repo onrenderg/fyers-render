@@ -1,4 +1,4 @@
-
+# Declare and inilize callable funciton 
 
 def setup_logger():
     """Initialize and configure the logger with dynamic filename"""
@@ -30,7 +30,7 @@ def setup_data_dir():
     else:
         print(f"Data dir {data_dir} does exist")
     return data_dir
-# Setup data directory
+# Setup data directory for tick data csv bk replay 
 data_dir = setup_data_dir()
 
 
@@ -60,8 +60,6 @@ active_ws = None
 
 
 
-
-###########################
 
 def load_api_credentials():
     """Load API credentials from credentials module"""

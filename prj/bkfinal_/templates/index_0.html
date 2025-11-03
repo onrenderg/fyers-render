@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live NIFTY Tick Chart (IST)</title>
+    <script src="https://cdn.jsdelivr.net/gh/parth-royale/cdn@main/lightweight-charts.standalone.production.js"></script>
+    <style>
+        #chart {
+            position: relative;
+            height: 600px;
+            width: 100%;
+            background-color: #131722;
+        }
+        
+        .floating-rectangle {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 300px;
+            height: 500px;
+            background-color: rgba(0, 128, 255, 0.8);
+            border: 2px solid #0056b3;
+            border-radius: 4px;
+            display: flex;
+            flex-direction: column;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-size: 12px;
+            cursor: grab;
+            z-index: 1000;
+        }
+        
+        .log-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        #chartUpdateLog {
+            background-color: rgba(0,0,0,0.2);
+        }
+        
+        #tradeLog {
+            background-color: rgba(0,0,0,0.1);
+        }
+        
+        #profitLog {
+            background-color: rgba(0,0,0,0.05);
+        }
+        
+        .log-entry {
+            margin-bottom: 5px;
+            word-wrap: break-word;
+        }
+        
+        .profit-positive {
+            color: #081ff2;
+        }
+        
+        .profit-negative {
+            color: #a5fb06;
+        }
+        
+        .order-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .order-buttons button {
+            padding: 8px 15px;
+            cursor: pointer;
+            border: none;
+            border-radius: 3px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        #l {
+            background-color: #4CAF50;
+        }
+        
+        #s {
+            background-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <h1>Live NIFTY Tick Chart (IST)</h1>
+    
+    <div class="order-buttons">
+        <button id="l">Long</button>
+        <button id="s">Short</button>
+    </div>
+    
+    <div id="chart"></div>
+    
+    <div id="floatingRectangle" class="floating-rectangle">
+        <div id="chartUpdateLog" class="log-section">Chart Updates</div>
+        <div id="tradeLog" class="log-section">Trade Logs</div>
+        <div id="profitLog" class="log-section">Overall Profit</div>
+    </div>
+
+    <script>
+       const chart = LightweightCharts.createChart(document.getElementById('chart'), {
+        width: window.innerWidth,
+        height: window.innerHeight,
+        priceScale: { borderColor: '#cccccc' },
+        timeScale: { 
+            borderColor: '#cccccc', 
+            timeVisible: true, 
+            secondsVisible: true,
+            tickMarkFormatter: (time) => {
+                const utcDate = new Date(time * 1000); // Convert UNIX time to Date object (UTC)
+                const istDate = new Date(utcDate.getTime() + (5.5 * 60 * 60 * 1000)); // Convert to IST
+                return istDate.toLocaleTimeString('en-IN');
+            }
+        },
+        localization: {
+            timeFormatter: (time) => {
+                const utcDate = new Date(time * 1000);
+                const istDate = new Date(utcDate.getTime() + (5.5 * 60 * 60 * 1000)); 
+                return istDate.toLocaleDateString('en-IN') + ' ' + istDate.toLocaleTimeString('en-IN');
+            }
+        }
+    });
+
+       const candleSeries = chart.addCandlestickSeries();
+       
+    </script>
+
+    <script>
+//@script1 
+      // First, fetch historical data
+      fetch('/historic')
+        .then(response => response.json())    // ← close this .then()
+        .then(candles => {
+          // Set the initial data
+          candleSeries.setData(candles);
+        })
+        .catch(error => console.error('Error fetching historical data:', error));
+    </script>
+
+    <script>
+      // Then connect to WebSocket for real-time updates
+      const ws = new WebSocket(
+        (location.protocol === "https:" ? "wss://" : "ws://") +
+        location.host + "/ws"
+      );
+
+      ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        if (data.candle) {
+          // Receiving a candle directly from the server
+          candleSeries.update(data.candle);
+        }
+      };
+
+      ws.onerror = error => console.error('WebSocket error:', error);
+    </script>
+
+    <script>
+        // Trading variables
+        let totalTrades = 0;
+        let profitableTrades = 0;
+        let totalProfit = 0;
+        let longTrades = 0;
+        let shortTrades = 0;
+        let isLong = false;
+        let isShort = false;
+        
+        let entryPrice = 0;
+        let latestPrice = null; 
+        let latestCandleTime = null;
+        let activeTrade = null;
+
+        // Helper functions
+        function convertToIST(timestamp) {
+            // Make sure timestamp is a Date object
+            if (!(timestamp instanceof Date)) {
+                timestamp = new Date(timestamp);
+            }
+            
+            // Add 5 hours and 30 minutes (IST offset from UTC)
+            return new Date(timestamp.getTime() + (5.5 * 60 * 60 * 1000));
+        }
+        
+        function formatTime(timestamp) {
+            // Convert to IST first
+            const istTime = convertToIST(timestamp);
+            
+            return istTime.toLocaleString('en-IN', {
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit', 
+                hour12: false
+            });
+        }
+
+        function calculateProfit(entryPrice, exitPrice, isLong) {
+            if (!entryPrice || !exitPrice) return "0.00";
+            return (((isLong ? exitPrice - entryPrice : entryPrice - exitPrice) / entryPrice) * 100).toFixed(2);
+        }
+
+        function logChartUpdate(message) {
+            document.getElementById('chartUpdateLog').innerHTML = `Chart Updates<br>${message}`;
+        }
+
+        function logTrade(message) {
+            const tradeLog = document.getElementById('tradeLog');
+            tradeLog.innerHTML += `<div class="log-entry" id="latest-trade">${message}</div>`;
+            tradeLog.scrollTop = tradeLog.scrollHeight;
+        }
+
+        function updateProfitLog() {
+            const profitPercentage = totalProfit.toFixed(2);
+            const profitClass = profitPercentage >= 0 ? 'profit-positive' : 'profit-negative';
+
+            document.getElementById('profitLog').innerHTML = `
+                Overall Profit<br>
+                <span class="${profitClass}">Total Profit: ${profitPercentage}%</span><br>
+                Total Trades: ${totalTrades}<br>
+                Profitable Trades: ${profitableTrades}<br>
+                Long Trades: ${longTrades}<br>
+                Short Trades: ${shortTrades}
+            `;
+        }
+
+        // Floating rectangle dragging functionality
+        function initializeFloatingRectangle() {
+            const floatingRectangle = document.getElementById('floatingRectangle');
+            let isDragging = false;
+            let offsetX = 0;
+            let offsetY = 0;
+
+            const startDrag = (e) => {
+                isDragging = true;
+                const rect = floatingRectangle.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                offsetX = clientX - rect.left;
+                offsetY = clientY - rect.top;
+                floatingRectangle.style.cursor = 'grabbing';
+            };
+
+            const onDrag = (e) => {
+                if (!isDragging) return;
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                floatingRectangle.style.left = `${clientX - offsetX}px`;
+                floatingRectangle.style.top = `${clientY - offsetY}px`;
+            };
+
+            const endDrag = () => {
+                isDragging = false;
+                floatingRectangle.style.cursor = 'grab';
+            };
+
+            floatingRectangle.addEventListener('mousedown', startDrag);
+            floatingRectangle.addEventListener('touchstart', startDrag, { passive: false });
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('touchmove', onDrag, { passive: false });
+            document.addEventListener('mouseup', endDrag);
+            document.addEventListener('touchend', endDrag);
+        }
+
+        // Trading functions
+        function executeLongTrade() {
+            if (!latestPrice || !latestCandleTime) {
+                alert("No price data available. Please wait for the data to update.");
+                return;
+            }
+
+            if (isLong) {
+                // Closing a long position
+                const profit = parseFloat(calculateProfit(entryPrice, latestPrice, true));
+                logTrade(`Long Close: ${profit}%, Entry: $${entryPrice.toFixed(2)}, Exit: $${latestPrice.toFixed(2)}, Time: ${formatTime(latestCandleTime)}`);
+                totalTrades++;
+                totalProfit += profit;
+                if (profit > 0) profitableTrades++;
+                longTrades++;
+                activeTrade = null;
+                isLong = false;
+            } else {
+                // Opening a long position
+                if (isShort) {
+                    // Close existing short position first
+                    const profit = parseFloat(calculateProfit(entryPrice, latestPrice, false));
+                    logTrade(`Short Close: ${profit}%, Entry: $${entryPrice.toFixed(2)}, Exit: $${latestPrice.toFixed(2)}, Time: ${formatTime(latestCandleTime)}`);
+                    totalTrades++;
+                    totalProfit += profit;
+                    if (profit > 0) profitableTrades++;
+                    shortTrades++;
+                    isShort = false;
+                }
+                
+                // Now open long position
+                entryPrice = latestPrice;
+                logTrade(`Long Entry: Price: $${latestPrice.toFixed(2)}, Time: ${formatTime(latestCandleTime)}`);
+                activeTrade = { type: 'Long', entryPrice: latestPrice }; 
+                isLong = true;
+            }
+            
+            updateProfitLog();
+        }
+
+        function executeShortTrade() {
+            if (!latestPrice || !latestCandleTime) {
+                alert("No price data available. Please wait for the data to update.");
+                return;
+            }
+
+            if (isShort) {
+                // Closing a short position
+                const profit = parseFloat(calculateProfit(entryPrice, latestPrice, false));
+                logTrade(`Short Close: ${profit}%, Entry: $${entryPrice.toFixed(2)}, Exit: $${latestPrice.toFixed(2)}, Time: ${formatTime(latestCandleTime)}`);
+                totalTrades++;
+                totalProfit += profit;
+                if (profit > 0) profitableTrades++;
+                shortTrades++;
+                activeTrade = null;
+                isShort = false;
+            } else {
+                // Opening a short position
+                if (isLong) {
+                    // Close existing long position first
+                    const profit = parseFloat(calculateProfit(entryPrice, latestPrice, true));
+                    logTrade(`Long Close: ${profit}%, Entry: $${entryPrice.toFixed(2)}, Exit: $${latestPrice.toFixed(2)}, Time: ${formatTime(latestCandleTime)}`);
+                    totalTrades++;
+                    totalProfit += profit;
+                    if (profit > 0) profitableTrades++;
+                    longTrades++;
+                    isLong = false;
+                }
+                
+                // Now open short position
+                entryPrice = latestPrice;
+                logTrade(`Short Entry: Price: $${latestPrice.toFixed(2)}, Time: ${formatTime(latestCandleTime)}`);
+                activeTrade = { type: 'Short', entryPrice: latestPrice }; 
+                isShort = true;
+            }
+            
+            updateProfitLog();
+        }
+
+        // Initialize
+        initializeFloatingRectangle();
+        
+        // Setup button handlers
+        document.getElementById('l').onclick = executeLongTrade;
+        document.getElementById('s').onclick = executeShortTrade;
+        
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.key === 'b') {
+                event.preventDefault();
+                executeLongTrade();
+            } else if (event.ctrlKey && event.key === 'v') {
+                event.preventDefault();
+                executeShortTrade();
+            }
+        });
+        
+        // Connect to WebSocket for realtime price updates
+        const originalOnMessage = ws.onmessage;
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.candle) {
+                latestPrice = data.candle.close;
+                latestCandleTime = new Date(data.candle.time * 1000); // Store raw time in milliseconds
+                const timeFormatted = formatTime(latestCandleTime);
+                
+                logChartUpdate(`Price: $${latestPrice.toFixed(2)}, Time: ${timeFormatted}`);
+                
+                // Update real-time P&L if there's an active trade
+                if (activeTrade) {
+                    const profit = calculateProfit(
+                        activeTrade.entryPrice, 
+                        latestPrice, 
+                        activeTrade.type === 'Long'
+                    );
+                    const profitClass = parseFloat(profit) >= 0 ? 'profit-positive' : 'profit-negative';
+                    
+                    // Find the latest trade entry and update it with real-time P&L
+                    const latestEntry = document.getElementById('latest-trade');
+                    if (latestEntry) {
+                        // Keep the original entry text (before any P&L info)
+                        let baseText = latestEntry.innerHTML;
+                        if (baseText.includes('<br>')) {
+                            baseText = baseText.split('<br>')[0];
+                        }
+                        
+                        latestEntry.innerHTML = `${baseText}<br><span class="${profitClass}">Real-Time P&L: ${profit}%</span>`;
+                    }
+                }
+            }
+            
+            // Call the original handler to update the chart
+            if (originalOnMessage) {
+                originalOnMessage.call(ws, event);
+            }
+        };
+    </script>
+</body>
+</html>

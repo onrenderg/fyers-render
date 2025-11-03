@@ -221,3 +221,12 @@
 2025-11-03 15:06:15 [ERROR] WebSocket error: Connection closed: 1001 
 2025-11-03 15:06:22 [ERROR] WebSocket error: Connection closed: 1001 
 2025-11-03 15:06:26 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 15:33:29 [INFO] Waiting 2.3s for fresh TOTP window
+2025-11-03 15:33:32 [INFO] Auth URL: https://api-t1.fyers.in/api/v3/generate-authcode?client_id=1BE74FZNXA-100&redirect_uri=http%3A%2F%2F127.0.0.1%3A8081&response_type=code&state=None
+2025-11-03 15:33:32 [INFO] Verifying TOTP with request_key: eyJhbGciOiJIUzI...
+2025-11-03 15:33:35 [INFO] Authentication successful
+2025-11-03 15:33:36 [INFO] Historical candles appended. Total count: 375
+2025-11-03 15:33:36 [INFO] Loaded 41399 ticks from /var/lib/data/apr03.csv
+2025-11-03 15:33:37 [ERROR] WebSocket error: Connection closed: 1001 
+2025-11-03 15:33:37 [INFO] Processed 0 ticks
+2025-11-03 15:33:54 [ERROR] WebSocket error: Connection closed: 1001 
